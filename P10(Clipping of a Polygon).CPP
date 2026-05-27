@@ -1,54 +1,84 @@
 #include <stdio.h>
-#include <graphics.h>
 #include <conio.h>
+#include <graphics.h>
+#include <math.h>
 
-int xmin, ymin, xmax, ymax;
+int i, j = 0, n;
+int rx1, rx2, ry1, ry2;
+float x1[32], y1[32];
 
-void clip(int x1, int y1, int x2, int y2) {
-    if(x1 < xmin) x1 = xmin;
-    if(x1 > xmax) x1 = xmax;
-    if(y1 < ymin) y1 = ymin;
-    if(y1 > ymax) y1 = ymax;
-
-    if(x2 < xmin) x2 = xmin;
-    if(x2 > xmax) x2 = xmax;
-    if(y2 < ymin) y2 = ymin;
-    if(y2 > ymax) y2 = ymax;
-
-    line(x1, y1, x2, y2);
+void clip(float e, float f, float m) {
+    int safety_counter = 0;
+    while ((e < rx1 || e > rx2 || f < ry1 || f > ry2) && safety_counter < 2) {
+        if (e < rx1) {
+            f += m * (rx1 - e);
+            e = rx1;
+        } else if (e > rx2) {
+            f += m * (rx2 - e);
+            e = rx2;
+        }
+        if (f < ry1) {
+            e += (ry1 - f) / m;
+            f = ry1;
+        } else if (f > ry2) {
+            e += (ry2 - f) / m;
+            f = ry2;
+        }
+        safety_counter++;
+    }
+    
+    if (e >= rx1 && e <= rx2 && f >= ry1 && f <= ry2) {
+        if (j > 0 && (x1[j - 1] == e && y1[j - 1] == f)) {
+            return;
+        }
+        x1[j] = e;
+        y1[j] = f;
+        j++;
+    }
 }
 
 void main() {
     int gd = DETECT, gm;
-    int n, i, poly[20];
+    float x[8], y[8], m;
+    
+    printf("Enter Coordinates for window: ");
+    scanf("%d %d %d %d", &rx1, &ry1, &rx2, &ry2);
 
-    printf("Enter window coordinates of xmin & ymin: ");
-    scanf("%d %d", &xmin, &ymin);
-    printf("Enter window coordinates of xmax & ymax: ");
-    scanf("%d %d", &xmax, &ymax);
-    printf("Enter number of vertices of polygon: ");
+    printf("Enter number of vertices: ");
     scanf("%d", &n);
 
-    printf("Enter coordinates x & y: ");
-    for (i = 0; i < 2 * n; i++) {
-        scanf("%d", &poly[i]);
+    printf("Enter Coordinates for polygon :\n");
+    for (i = 0; i < n; i++) {
+        scanf("%f %f", &x[i], &y[i]);
     }
-    poly[2 * n] = poly[0];
-    poly[2 * n + 1] = poly[1];
-
-    initgraph(&gd, &gm, "C:\\turboc3\\bgi");
-
-    rectangle(xmin, ymin, xmax, ymax);
-    drawpoly(n + 1, poly);
-    getch();
-
-    cleardevice();
-    rectangle(xmin, ymin, xmax, ymax);
     
-    for (i = 0; i < 2 * n; i += 2) {
-        clip(poly[i], poly[i+1], poly[i+2], poly[i+3]);
+    initgraph(&gd, &gm, "C:\\TURBOC3\\BGI"); 
+    
+    rectangle(rx1, ry1, rx2, ry2);
+    for (i = 0; i < n - 1; i++) {
+        line(x[i], y[i], x[i + 1], y[i + 1]);
     }
-
+    line(x[i], y[i], x[0], y[0]);
+    getch();
+    
+    cleardevice();
+    for (i = 0; i < n - 1; i++) {
+        m = (x[i + 1] - x[i] != 0) ? (y[i + 1] - y[i]) / (x[i + 1] - x[i]) : 9999; 
+        clip(x[i], y[i], m);
+        clip(x[i + 1], y[i + 1], m);
+    }
+    m = (x[0] - x[i] != 0) ? (y[0] - y[i]) / (x[0] - x[i]) : 9999;
+    clip(x[i], y[i], m);
+    clip(x[0], y[0], m);
+    
+    rectangle(rx1, ry1, rx2, ry2);
+    for (i = 0; i < j - 1; i++) {
+        line(x1[i], y1[i], x1[i + 1], y1[i + 1]); 
+    }
+    if (j > 0) {
+        line(x1[j - 1], y1[j - 1], x1[0], y1[0]);
+    }
+    
     getch();
     closegraph();
 }
